@@ -25,7 +25,7 @@ class LoginController {
 
         await trx.commit();
 
-        const salt = usuario?.salt;
+        const salt: string = usuario?.salt || "";
 
         const hash = crypto.pbkdf2Sync(
             senha,
