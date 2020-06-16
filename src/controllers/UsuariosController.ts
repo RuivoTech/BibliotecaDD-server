@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import knex from "../database/connection";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import Mailer from "../config/Mailer";
 
 interface Usuario {
     id: number,
@@ -12,6 +13,8 @@ interface Usuario {
     senha: string,
     salt: string
 }
+
+const mailer = new Mailer();
 
 class UsuariosController {
     async index(request: Request, response: Response) {
@@ -24,11 +27,26 @@ class UsuariosController {
         return response.json(usuarios);
     }
 
+    async show(request: Request, response: Response) {
+        const { id } = request.params;
+
+        const trx = await knex.transaction();
+
+        const usuario = await trx("usuarios")
+            .where({ id: id })
+            .select("id", "nome", "nomeUsuario", "email", "nivel");
+
+        trx.commit();
+
+        return response.json(usuario[0]);
+    }
+
     async create(request: Request, response: Response) {
         const {
             nomeUsuario,
+            nome,
             email,
-            permissao
+            nivel
         } = request.body;
 
         const senha = crypto.randomBytes(6).toString("hex");
@@ -42,8 +60,9 @@ class UsuariosController {
 
         const usuario = {
             nomeUsuario,
+            nome,
             email,
-            permissao,
+            nivel,
             senha: hash,
             salt
         }
@@ -52,6 +71,8 @@ class UsuariosController {
         const usuarioId = insertedIds[0];
 
         await trx.commit();
+
+        mailer.sendMail(usuario.email, usuario.nome, senha, usuario.nomeUsuario);
 
         return response.json({
             id: usuarioId,
@@ -64,7 +85,7 @@ class UsuariosController {
             id,
             nomeUsuario,
             email,
-            permissao
+            nivel
         } = request.body;
 
         const trx = await knex.transaction();
@@ -73,7 +94,39 @@ class UsuariosController {
             id,
             nomeUsuario,
             email,
-            permissao
+            nivel
+        }
+
+        await trx('usuarios').update(usuario).where({ id });
+
+        await trx.commit();
+
+        return response.json(usuario);
+    }
+
+    async updatePerfil(request: Request, response: Response) {
+        const {
+            id,
+            nome,
+            nomeUsuario,
+            email,
+            senha
+
+        } = request.body;
+
+        const trx = await knex.transaction();
+
+        const salt = crypto.randomBytes(16).toString('hex');
+
+        const novaSenha = crypto.pbkdf2Sync(senha, salt,
+            1000, 64, `sha512`).toString(`hex`);
+
+        const usuario = {
+            id,
+            nome,
+            email,
+            senha: novaSenha,
+            salt
         }
 
         await trx('usuarios').update(usuario).where({ id });

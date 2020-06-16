@@ -36,8 +36,10 @@ routes.put("/retiradas", retiradasController.update);
 routes.delete("/retiradas/:id_retirada", retiradasController.delete);
 
 routes.get("/usuarios", usuariosController.index);
+routes.get("/usuarios/:id", usuariosController.show);
 routes.post('/usuarios', usuariosController.create);
 routes.put('/usuarios', usuariosController.update);
+routes.put("/usuarios/:id", usuariosController.updatePerfil);
 routes.delete("/usuarios/:id", usuariosController.delete);
 
 

@@ -20,7 +20,7 @@ class LoginController {
         const trx = await knex.transaction();
 
         const usuario = await trx<Usuario>('usuarios')
-            .where('email', String(email))
+            .where({ email }).orWhere({ nomeUsuario: email })
             .first();
 
         await trx.commit();
