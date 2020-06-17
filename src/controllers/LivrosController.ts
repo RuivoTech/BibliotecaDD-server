@@ -95,11 +95,13 @@ class LivrosController {
         const { id_livro } = request.params;
         const trx = await knex.transaction();
 
-        await trx.delete().where({ id_livro });
+        await trx.delete().from("livro").where({ id_livro });
+
+        const livros = await trx('livro');
 
         await trx.commit();
 
-        return response.json({ mensagem: "Livro removido com sucesso!" });
+        return response.json(livros);
     }
 
     async relatorio(request: Request, response: Response) {

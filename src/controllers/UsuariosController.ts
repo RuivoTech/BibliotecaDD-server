@@ -141,11 +141,13 @@ class UsuariosController {
 
         const trx = await knex.transaction();
 
-        await trx.delete().where({ id });
+        await trx.delete().from("usuarios").where({ id });
+
+        const usuarios = await trx('usuarios');
 
         trx.commit();
 
-        return response.json({ mensagem: "Usuário removido com sucesso!" });
+        return response.json(usuarios);
     }
 
     async getUsuario(authorization: String) {
