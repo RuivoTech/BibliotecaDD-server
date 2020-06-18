@@ -46,6 +46,7 @@ class LivrosController {
             quantidade,
             tipo
         } = request.body;
+        let data = new Date();
         try {
             const trx = await knex.transaction();
 
@@ -56,7 +57,8 @@ class LivrosController {
                 autor,
                 quantidade,
                 tipo,
-                criadoPor: usuario?.nome
+                criadoPor: usuario?.nome,
+                dataCriado: String(data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate())
             }
 
             const insertedIds = await trx('livro').transacting(trx).insert(livro);
@@ -81,6 +83,7 @@ class LivrosController {
             quantidade,
             tipo
         } = request.body;
+        let data = new Date();
         try {
             const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
 
@@ -92,7 +95,8 @@ class LivrosController {
                 autor,
                 quantidade,
                 tipo,
-                alteradoPor: usuario?.nome
+                alteradoPor: usuario?.nome,
+                dataAlterado: String(data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate())
             }
 
             await trx('livro').transacting(trx).update(livro).where({ id_livro });
