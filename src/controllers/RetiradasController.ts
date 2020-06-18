@@ -121,7 +121,7 @@ class RetiradasController {
                     dataCriado: String(data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate())
                 };
 
-                await trx("livro").transacting(trx).update({ quantidade: "quantidade - 1" }).where({ id_livro: retirada.id_livroRetirada })
+                await trx("livro").transacting(trx).where({ id_livro: retirada.id_livroRetirada }).decrement("quantidade", 1);
 
                 await trx('retirada').transacting(trx).insert(retirada);
 
