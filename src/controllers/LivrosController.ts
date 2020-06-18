@@ -6,29 +6,37 @@ const usuariosController = new UsuariosController();
 
 class LivrosController {
     async index(request: Request, response: Response) {
-        const trx = await knex.transaction();
+        try {
+            const trx = await knex.transaction();
 
-        const livros = await trx('livro');
+            const livros = await trx('livro').transacting(trx);
 
-        await trx.commit();
+            await trx.commit();
 
-        return response.json(livros);
+            return response.json(livros);
+        } catch (error) {
+            return response.json({ error: error })
+        }
+
     }
 
     async show(request: Request, response: Response) {
         const { id_livro } = request.params;
+        try {
+            const trx = await knex.transaction();
 
-        const trx = await knex.transaction();
+            const livro = await trx("livro").transacting(trx).where({ id_livro }).first();
 
-        const livro = await trx("livro").where({ id_livro }).first();
+            await trx.commit();
 
-        await trx.commit();
+            if (!livro) {
+                return response.status(400).json({ message: "Livro não encontrado" });
+            }
 
-        if (!livro) {
-            return response.status(400).json({ message: "Livro não encontrado" });
+            return response.json({ livro });
+        } catch (error) {
+            return response.json({ error: error })
         }
-
-        return response.json({ livro });
     }
 
     async create(request: Request, response: Response) {
@@ -38,28 +46,31 @@ class LivrosController {
             quantidade,
             tipo
         } = request.body;
+        try {
+            const trx = await knex.transaction();
 
-        const trx = await knex.transaction();
+            const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
 
-        const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
+            const livro = {
+                nome,
+                autor,
+                quantidade,
+                tipo,
+                criadoPor: usuario?.nome
+            }
 
-        const livro = {
-            nome,
-            autor,
-            quantidade,
-            tipo,
-            criadoPor: usuario?.nome
+            const insertedIds = await trx('livro').transacting(trx).insert(livro);
+            const livroId = insertedIds[0];
+
+            await trx.commit();
+
+            return response.json({
+                id: livroId,
+                ...livro
+            })
+        } catch (error) {
+            return response.json({ error: error })
         }
-
-        const insertedIds = await trx('livro').insert(livro);
-        const livroId = insertedIds[0];
-
-        await trx.commit();
-
-        return response.json({
-            id: livroId,
-            ...livro
-        })
     }
 
     async update(request: Request, response: Response) {
@@ -70,34 +81,38 @@ class LivrosController {
             quantidade,
             tipo
         } = request.body;
+        try {
+            const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
 
-        const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
+            const trx = await knex.transaction();
 
-        const trx = await knex.transaction();
+            const livro = {
+                id_livro,
+                nome,
+                autor,
+                quantidade,
+                tipo,
+                alteradoPor: usuario?.nome
+            }
 
-        const livro = {
-            id_livro,
-            nome,
-            autor,
-            quantidade,
-            tipo,
-            alteradoPor: usuario?.nome
+            await trx('livro').transacting(trx).update(livro).where({ id_livro });
+
+            await trx.commit();
+
+            return response.json(livro);
+        } catch (error) {
+            return response.json({ error: error });
         }
 
-        await trx('livro').update(livro).where({ id_livro });
-
-        await trx.commit();
-
-        return response.json(livro);
     }
 
     async delete(request: Request, response: Response) {
         const { id_livro } = request.params;
         const trx = await knex.transaction();
 
-        await trx.delete().from("livro").where({ id_livro });
+        await trx.delete().transacting(trx).from("livro").where({ id_livro });
 
-        const livros = await trx('livro');
+        const livros = await trx('livro').transacting(trx);
 
         await trx.commit();
 
@@ -120,7 +135,7 @@ class LivrosController {
 
         const trx = await knex.transaction();
 
-        const livros = await trx('livro')
+        const livros = await trx('livro').transacting(trx)
             .whereRaw(sql);
 
         trx.commit();

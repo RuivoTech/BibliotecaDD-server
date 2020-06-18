@@ -16,44 +16,48 @@ interface Usuario {
 class LoginController {
     async login(request: Request, response: Response) {
         const { email, senha } = request.body;
+        try {
+            const trx = await knex.transaction();
 
-        const trx = await knex.transaction();
+            const usuario = await trx<Usuario>('usuarios').transacting(trx)
+                .where({ email }).orWhere({ nomeUsuario: email })
+                .first();
 
-        const usuario = await trx<Usuario>('usuarios')
-            .where({ email }).orWhere({ nomeUsuario: email })
-            .first();
+            await trx.commit();
 
-        await trx.commit();
+            const salt: string = usuario?.salt || "";
 
-        const salt: string = usuario?.salt || "";
-
-        const hash = crypto.pbkdf2Sync(
-            senha,
-            salt,
-            1000,
-            64,
-            `sha512`
-        )
-            .toString(`hex`);
-
-        if (usuario && usuario?.senha === hash) {
-            const token = jwt.sign(
-                {
-                    id: usuario.id,
-                    nomeUsuario: usuario.nomeUsuario,
-                    email: usuario.email,
-                    nome: usuario.nome,
-                    nivel: usuario.nivel
-                },
-                "RuivoTech-BibliotecaDD"
+            const hash = crypto.pbkdf2Sync(
+                senha,
+                salt,
+                1000,
+                64,
+                `sha512`
             )
+                .toString(`hex`);
 
-            return response.json({ token });
+            if (usuario && usuario?.senha === hash) {
+                const token = jwt.sign(
+                    {
+                        id: usuario.id,
+                        nomeUsuario: usuario.nomeUsuario,
+                        email: usuario.email,
+                        nome: usuario.nome,
+                        nivel: usuario.nivel
+                    },
+                    "RuivoTech-BibliotecaDD"
+                )
+
+                return response.json({ token });
+            }
+
+            return response.json({
+                error: "Não foi pssível encontrar o usuário"
+            })
+        } catch (error) {
+            return response.json({ error: error })
         }
 
-        return response.json({
-            error: "Não foi pssível encontrar o usuário"
-        })
     }
 
     async verificarToken(request: Request, response: Response, next: NextFunction) {
@@ -65,7 +69,7 @@ class LoginController {
             }
             try {
                 const autorizado = jwt.verify(authorization.split(' ')[1], "RuivoTech-BibliotecaDD") as Usuario;
-                const usuario = await trx<Usuario>("usuarios")
+                const usuario = await trx<Usuario>("usuarios").transacting(trx)
                     .where({ email: autorizado.email })
                     .first();
 
@@ -73,12 +77,12 @@ class LoginController {
                 if (!usuario) {
                     return response.json({ error: "Você não tem autorização para acessar esta rota!" });
                 }
+
+                next();
             } catch (error) {
 
                 return response.json({ error: error })
             }
-
-            next();
         } else {
             return response.json({ error: "Você não tem autorização para acessar esta rota!" });
         }

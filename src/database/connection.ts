@@ -8,7 +8,12 @@ const connection = knex({
         user: "richieri",
         password: "Beatricy1812@",
         database: "bibliotecadd"
-    }
+    },
+    pool: {
+        min: 5,
+        max: 30
+    },
+    acquireConnectionTimeout: 1000
 });
 
 export default connection;
