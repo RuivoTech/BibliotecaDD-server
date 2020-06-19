@@ -127,13 +127,13 @@ class LivrosController {
         let { tipo, emBaixa } = request.query;
         let sql = "";
 
-        if (tipo != "todos") {
-            sql += "tipo = " + (tipo === "engenharia" ? "0" : "1");
+        if (tipo !== "todos") {
+            sql += `tipo = ${tipo}`;
         }
 
-        if (tipo != "todos" && emBaixa) {
+        if (tipo !== "todos" && emBaixa) {
             sql += " AND quantidade <= 10";
-        } else if (tipo == "todos" && emBaixa) {
+        } else if (tipo === "todos" && emBaixa) {
             sql += " quantidade <= 10";
         }
 

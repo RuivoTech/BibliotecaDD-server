@@ -12,7 +12,7 @@ class HomeController {
                     "nome",
                     "autor",
                     "quantidade",
-                    trx.raw("CASE tipo WHEN 0 THEN 'Engenharia' ELSE 'Normal' END as tipo")
+                    "tipo"
                 )
                 .orderBy('quantidade');
 

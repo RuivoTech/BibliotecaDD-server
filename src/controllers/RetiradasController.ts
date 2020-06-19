@@ -48,6 +48,7 @@ class RetiradasController {
                     "l.nome as livro"
                 )
                 .whereRaw("DAY(r.data_retirada) >= (DAY(now()) - 10)")
+                .orderBy("data_retirada", "desc");
 
             await trx.commit();
 
@@ -179,6 +180,10 @@ class RetiradasController {
 
         try {
             const trx = await knex.transaction();
+
+            const retirada = await trx("retirada").transacting(trx).where("id_retirada", id_retirada).first();
+
+            await trx("livro").transacting(trx).where({ id_livro: retirada.id_livroRetirada }).increment("quantidade", 1)
 
             await trx.delete().transacting(trx).from("retirada").where({ id_retirada });
 
