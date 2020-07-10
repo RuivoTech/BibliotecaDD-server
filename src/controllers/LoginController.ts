@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction, json } from "express";
+import dotenv from "dotenv";
+
 import knex from "../database/connection";
 import crypto from "crypto";
 import jwt from 'jsonwebtoken';
+
+dotenv.config();
 
 interface Usuario {
     id: number,
@@ -17,13 +21,9 @@ class LoginController {
     async login(request: Request, response: Response) {
         const { email, senha } = request.body;
         try {
-            const trx = await knex.transaction();
-
-            const usuario = await trx<Usuario>('usuarios').transacting(trx)
+            const usuario = await knex<Usuario>('usuarios')
                 .where({ email }).orWhere({ nomeUsuario: email })
                 .first();
-
-            await trx.commit();
 
             const salt: string = usuario?.salt || "";
 
@@ -45,7 +45,7 @@ class LoginController {
                         nome: usuario.nome,
                         nivel: usuario.nivel
                     },
-                    "RuivoTech-BibliotecaDD"
+                    String(process.env.SECRET)
                 )
 
                 return response.json({ token });
@@ -61,22 +61,22 @@ class LoginController {
     }
 
     async verificarToken(request: Request, response: Response, next: NextFunction) {
-        const { authorization } = request.headers
-        const trx = await knex.transaction();
+        const { authorization } = request.headers;
+
         if (authorization && authorization.split(' ')[0] === 'Bearer') {
             if (authorization.split(' ')[1] === "undefined") {
                 return response.json({ error: "undefined" });
             }
             try {
-                const autorizado = jwt.verify(authorization.split(' ')[1], "RuivoTech-BibliotecaDD") as Usuario;
-                const usuario = await trx<Usuario>("usuarios").transacting(trx)
+                const autorizado = jwt.verify(authorization.split(' ')[1], String(process.env.SECRET)) as Usuario;
+                const usuario = await knex<Usuario>("usuarios")
                     .where({ email: autorizado.email })
                     .first();
 
-                await trx.commit();
+
                 if (!usuario) {
                     return response.json({ error: "Você não tem autorização para acessar esta rota!" });
-                }
+                };
 
                 next();
             } catch (error) {

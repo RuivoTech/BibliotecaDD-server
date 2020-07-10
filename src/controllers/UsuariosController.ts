@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
-import knex from "../database/connection";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+
+import knex from "../database/connection";
 import Mailer from "../config/Mailer";
+
+dotenv.config();
 
 interface Usuario {
     id: number,
@@ -19,11 +23,7 @@ const mailer = new Mailer();
 class UsuariosController {
     async index(request: Request, response: Response) {
         try {
-            const trx = await knex.transaction();
-
-            const usuarios = await trx("usuarios").transacting(trx)
-
-            await trx.commit();
+            const usuarios = await knex("usuarios");
 
             return response.json(usuarios);
         } catch (error) {
@@ -35,13 +35,9 @@ class UsuariosController {
     async show(request: Request, response: Response) {
         const { id } = request.params;
         try {
-            const trx = await knex.transaction();
-
-            const usuario = await trx("usuarios").transacting(trx)
+            const usuario = await knex("usuarios")
                 .where({ id: id })
                 .select("id", "nome", "nomeUsuario", "email", "nivel");
-
-            trx.commit();
 
             return response.json(usuario[0]);
         } catch (error) {
@@ -61,8 +57,6 @@ class UsuariosController {
 
             const senha = crypto.randomBytes(6).toString("hex");
 
-            const trx = await knex.transaction();
-
             const salt = crypto.randomBytes(16).toString('hex');
 
             const hash = crypto.pbkdf2Sync(senha, salt,
@@ -77,10 +71,8 @@ class UsuariosController {
                 salt
             }
 
-            const insertedIds = await trx('usuarios').transacting(trx).insert(usuario);
+            const insertedIds = await knex('usuarios').insert(usuario);
             const usuarioId = insertedIds[0];
-
-            await trx.commit();
 
             mailer.sendMail(usuario.email, usuario.nome, senha, usuario.nomeUsuario);
 
@@ -101,8 +93,6 @@ class UsuariosController {
             nivel
         } = request.body;
         try {
-            const trx = await knex.transaction();
-
             const usuario = {
                 id,
                 nomeUsuario,
@@ -110,9 +100,7 @@ class UsuariosController {
                 nivel
             }
 
-            await trx('usuarios').transacting(trx).update(usuario).where({ id });
-
-            await trx.commit();
+            await knex('usuarios').update(usuario).where({ id });
 
             return response.json(usuario);
         } catch (error) {
@@ -125,14 +113,11 @@ class UsuariosController {
         const {
             id,
             nome,
-            nomeUsuario,
             email,
             senha
 
         } = request.body;
         try {
-            const trx = await knex.transaction();
-
             const salt = crypto.randomBytes(16).toString('hex');
 
             const novaSenha = crypto.pbkdf2Sync(senha, salt,
@@ -146,9 +131,7 @@ class UsuariosController {
                 salt
             }
 
-            await trx('usuarios').transacting(trx).update(usuario).where({ id });
-
-            await trx.commit();
+            await knex('usuarios').update(usuario).where({ id });
 
             return response.json(usuario);
         } catch (error) {
@@ -160,13 +143,10 @@ class UsuariosController {
     async delete(request: Request, response: Response) {
         const { id } = request.params;
         try {
-            const trx = await knex.transaction();
 
-            await trx.delete().transacting(trx).from("usuarios").where({ id });
+            await knex.delete().from("usuarios").where({ id });
 
-            const usuarios = await trx('usuarios').transacting(trx);
-
-            trx.commit();
+            const usuarios = await knex('usuarios');
 
             return response.json(usuarios);
         } catch (error) {
@@ -177,14 +157,10 @@ class UsuariosController {
 
     async getUsuario(authorization: String) {
 
-        const trx = await knex.transaction();
-
-        const autorizado = jwt.verify(String(authorization).split(' ')[1], "RuivoTech-BibliotecaDD") as Usuario;
-        const usuario = await trx<Usuario>("usuarios").transacting(trx)
+        const autorizado = jwt.verify(String(authorization).split(' ')[1], String(process.env.SECRET)) as Usuario;
+        const usuario = await knex<Usuario>("usuarios")
             .where({ email: autorizado.email })
             .first();
-
-        trx.commit();
 
         return usuario;
     }

@@ -29,9 +29,7 @@ interface Retirada {
 class RetiradasController {
     async index(request: Request, response: Response) {
         try {
-            const trx = await knex.transaction();
-
-            const retiradas = await trx('retirada as r').transacting(trx)
+            const retiradas = await knex('retirada as r')
                 .join('livro as l', 'r.id_livroRetirada   ', 'l.id_livro')
                 .select(
                     "r.id_retirada",
@@ -39,18 +37,16 @@ class RetiradasController {
                     "r.nome",
                     "r.curso",
                     "r.semestre",
-                    trx.raw("DATE_FORMAT(r.data_retirada, '%Y-%m-%d') as data_retirada"),
+                    knex.raw("DATE_FORMAT(r.data_retirada, '%Y-%m-%d') as data_retirada"),
                     "r.id_livroRetirada",
                     "r.criadoPor",
-                    trx.raw("DATE_FORMAT(r.dataCriado, '%Y-%m-%d') as dataCriado"),
+                    knex.raw("DATE_FORMAT(r.dataCriado, '%Y-%m-%d') as dataCriado"),
                     "r.alteradoPor",
-                    trx.raw("DATE_FORMAT(r.dataAlterado, '%Y-%m-%d') as dataAlterado"),
+                    knex.raw("DATE_FORMAT(r.dataAlterado, '%Y-%m-%d') as dataAlterado"),
                     "l.nome as livro"
                 )
                 .whereRaw("DAY(r.data_retirada) >= (DAY(now()) - 10)")
                 .orderBy("data_retirada", "desc");
-
-            await trx.commit();
 
             return response.json(retiradas);
         } catch (error) {
@@ -62,9 +58,7 @@ class RetiradasController {
     async show(request: Request, response: Response) {
         const { id_retirada } = request.params;
         try {
-            const trx = await knex.transaction();
-
-            const retirada = await trx("retirada as r").transacting(trx)
+            const retirada = await knex("retirada as r")
                 .join('livro as l', 'r.id_livroRetirada', 'l.id_livro')
                 .where({ id_retirada }).first()
                 .select(
@@ -73,7 +67,7 @@ class RetiradasController {
                     "r.nome",
                     "r.curso",
                     "r.semestre",
-                    trx.raw("DATE_FORMAT(r.data_retirada, '%Y-%m-%d') as data_retirada"),
+                    knex.raw("DATE_FORMAT(r.data_retirada, '%Y-%m-%d') as data_retirada"),
                     "r.id_livroRetirada",
                     "r.criadoPor",
                     "r,dataCriado",
@@ -81,8 +75,6 @@ class RetiradasController {
                     "r.dataAlterado",
                     "l.nome as livro"
                 );
-
-            await trx.commit();
 
             if (!retirada) {
                 return response.status(400).json({ message: "Retirada não encontrada" });
@@ -105,8 +97,6 @@ class RetiradasController {
         } = request.body.retirada;
         const { livros_retirada } = request.body;
         try {
-            const trx = await knex.transaction();
-
             const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
             let data = new Date()
 
@@ -122,11 +112,9 @@ class RetiradasController {
                     dataCriado: String(data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate())
                 };
 
-                await trx("livro").transacting(trx).where({ id_livro: retirada.id_livroRetirada }).decrement("quantidade", 1);
+                await knex("livro").where({ id_livro: retirada.id_livroRetirada }).decrement("quantidade", 1);
 
-                await trx('retirada').transacting(trx).insert(retirada);
-
-                await trx.commit();
+                await knex('retirada').insert(retirada);
             });
 
             return response.json({ mensagem: "Retirada cadastrada com sucesso!" });
@@ -150,8 +138,6 @@ class RetiradasController {
         try {
             const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
 
-            const trx = await knex.transaction();
-
             const retirada: Retirada = {
                 id_retirada,
                 ra,
@@ -164,9 +150,7 @@ class RetiradasController {
                 dataAlterado: String(data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate())
             };
 
-            await trx('retirada').transacting(trx).update(retirada).where({ id_retirada });
-
-            await trx.commit();
+            await knex('retirada').update(retirada).where({ id_retirada });
 
             return response.json(retirada);
         } catch (error) {
@@ -179,15 +163,13 @@ class RetiradasController {
         const { id_retirada } = request.params;
 
         try {
-            const trx = await knex.transaction();
+            const retirada = await knex("retirada").where("id_retirada", id_retirada).first();
 
-            const retirada = await trx("retirada").transacting(trx).where("id_retirada", id_retirada).first();
+            await knex("livro").where({ id_livro: retirada.id_livroRetirada }).increment("quantidade", 1)
 
-            await trx("livro").transacting(trx).where({ id_livro: retirada.id_livroRetirada }).increment("quantidade", 1)
+            await knex.delete().from("retirada").where({ id_retirada });
 
-            await trx.delete().transacting(trx).from("retirada").where({ id_retirada });
-
-            const retiradas = await trx('retirada as r').transacting(trx)
+            const retiradas = await knex('retirada as r')
                 .join('livro as l', 'r.id_livroRetirada   ', 'l.id_livro')
                 .select(
                     "r.id_retirada",
@@ -195,17 +177,15 @@ class RetiradasController {
                     "r.nome",
                     "r.curso",
                     "r.semestre",
-                    trx.raw("DATE_FORMAT(r.data_retirada, '%Y-%m-%d') as data_retirada"),
+                    knex.raw("DATE_FORMAT(r.data_retirada, '%Y-%m-%d') as data_retirada"),
                     "r.id_livroRetirada",
                     "r.criadoPor",
-                    trx.raw("DATE_FORMAT(r.dataCriado, '%Y-%m-%d') as dataCriado"),
+                    knex.raw("DATE_FORMAT(r.dataCriado, '%Y-%m-%d') as dataCriado"),
                     "r.alteradoPor",
-                    trx.raw("DATE_FORMAT(r.dataAlterado, '%Y-%m-%d') as dataAlterado"),
+                    knex.raw("DATE_FORMAT(r.dataAlterado, '%Y-%m-%d') as dataAlterado"),
                     "l.nome as livro"
                 )
-                .whereRaw("DAY(r.data_retirada) >= (DAY(now()) - 10)")
-
-            trx.commit();
+                .whereRaw("DAY(r.data_retirada) >= (DAY(now()) - 10)");
 
             return response.json(retiradas);
         } catch (error) {
@@ -220,14 +200,10 @@ class RetiradasController {
         const query = String(dataInicio) !== "0000-00-00" || String(dataFim) !== "0000-00-00"
             ? `data_retirada BETWEEN '${dataInicio}' AND '${dataFim}'` : "true";
 
-        const trx = await knex.transaction();
-
-        const retiradas = await trx("retirada as r").transacting(trx)
+        const retiradas = await knex("retirada as r")
             .join("livro as l", "l.id_livro", "r.id_livroRetirada")
             .whereRaw(query)
             .select("r.ra", "r.nome", "r.curso", "r.semestre", "l.nome as livro");
-
-        trx.commit();
 
         return response.json(retiradas);
     }

@@ -1,13 +1,16 @@
+import dotenv from "dotenv";
 import knex from "knex";
+
+dotenv.config();
 
 const connection = knex({
     client: "mysql",
     version: "10.1",
     connection: {
-        host: "localhost",
-        user: "richieri",
-        password: "Beatricy1812@",
-        database: "bibliotecadd"
+        host: process.env.BD_HOST,
+        user: process.env.BD_USER,
+        password: process.env.BD_PASSWORD,
+        database: process.env.BD_BASE
     },
     pool: {
         min: 5,

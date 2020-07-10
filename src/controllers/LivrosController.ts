@@ -7,11 +7,7 @@ const usuariosController = new UsuariosController();
 class LivrosController {
     async index(request: Request, response: Response) {
         try {
-            const trx = await knex.transaction();
-
-            const livros = await trx('livro').transacting(trx);
-
-            await trx.commit();
+            const livros = await knex('livro');
 
             return response.json(livros);
         } catch (error) {
@@ -23,11 +19,7 @@ class LivrosController {
     async show(request: Request, response: Response) {
         const { id_livro } = request.params;
         try {
-            const trx = await knex.transaction();
-
-            const livro = await trx("livro").transacting(trx).where({ id_livro }).first();
-
-            await trx.commit();
+            const livro = await knex("livro").where({ id_livro }).first();
 
             if (!livro) {
                 return response.status(400).json({ message: "Livro não encontrado" });
@@ -48,8 +40,6 @@ class LivrosController {
         } = request.body;
         let data = new Date();
         try {
-            const trx = await knex.transaction();
-
             const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
 
             const livro = {
@@ -61,10 +51,8 @@ class LivrosController {
                 dataCriado: String(data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate())
             }
 
-            const insertedIds = await trx('livro').transacting(trx).insert(livro);
+            const insertedIds = await knex('livro').insert(livro);
             const livroId = insertedIds[0];
-
-            await trx.commit();
 
             return response.json({
                 id: livroId,
@@ -87,8 +75,6 @@ class LivrosController {
         try {
             const usuario = await usuariosController.getUsuario(String(request.headers.authorization));
 
-            const trx = await knex.transaction();
-
             const livro = {
                 id_livro,
                 nome,
@@ -99,9 +85,7 @@ class LivrosController {
                 dataAlterado: String(data.getFullYear() + "-" + data.getMonth() + "-" + data.getDate())
             }
 
-            await trx('livro').transacting(trx).update(livro).where({ id_livro });
-
-            await trx.commit();
+            await knex('livro').update(livro).where({ id_livro });
 
             return response.json(livro);
         } catch (error) {
@@ -112,13 +96,10 @@ class LivrosController {
 
     async delete(request: Request, response: Response) {
         const { id_livro } = request.params;
-        const trx = await knex.transaction();
 
-        await trx.delete().transacting(trx).from("livro").where({ id_livro });
+        await knex.delete().from("livro").where({ id_livro });
 
-        const livros = await trx('livro').transacting(trx);
-
-        await trx.commit();
+        const livros = await knex('livro');
 
         return response.json(livros);
     }
@@ -137,12 +118,8 @@ class LivrosController {
             sql += " quantidade <= 10";
         }
 
-        const trx = await knex.transaction();
-
-        const livros = await trx('livro').transacting(trx)
+        const livros = await knex('livro')
             .whereRaw(sql);
-
-        trx.commit();
 
         return response.json(livros);
     }
