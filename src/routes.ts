@@ -42,5 +42,4 @@ routes.put('/usuarios', usuariosController.update);
 routes.put("/usuarios/:id", usuariosController.updatePerfil);
 routes.delete("/usuarios/:id", usuariosController.delete);
 
-
 export default routes;

@@ -6,8 +6,9 @@ const usuariosController = new UsuariosController();
 
 class LivrosController {
     async index(request: Request, response: Response) {
+        const { emEstoque } = request.query;
         try {
-            const livros = await knex('livro');
+            const livros = emEstoque ? await knex("livro").where("quantidade", ">", 0) : await knex('livro');
 
             return response.json(livros);
         } catch (error) {
