@@ -45,8 +45,6 @@ class RetiradasController {
                     knex.raw("DATE_FORMAT(r.dataAlterado, '%Y-%m-%d') as dataAlterado"),
                     "l.nome as livro"
                 )
-                .where("MONTH(r.data_retirada)", "=", "MONTH(now())")
-                .andWhere("DAY(r.data_retirada)", ">=", "(DAY(now()) - 10)")
                 .orderBy("data_retirada", "desc");
 
             return response.json(retiradas);
