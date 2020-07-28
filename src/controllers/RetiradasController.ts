@@ -45,7 +45,7 @@ class RetiradasController {
                     knex.raw("DATE_FORMAT(r.dataAlterado, '%Y-%m-%d') as dataAlterado"),
                     "l.nome as livro"
                 )
-                .orderBy("data_retirada", "desc");
+                .orderBy("r.data_retirada", "desc");
 
             return response.json(retiradas);
         } catch (error) {
